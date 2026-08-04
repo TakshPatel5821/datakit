@@ -1,0 +1,54 @@
+# Run with:  datakit run examples/sales_pipeline.yaml -v
+name: sales by region
+
+source: examples/data/sales_raw.csv
+
+clean:
+  missing: median          # mean | median | mode | zero | drop | a literal value
+  outliers: iqr            # iqr | zscore | clip  (omit to keep everything)
+  outlier_factor: 3.0
+
+steps:
+  - name: drop cancelled and zero-value orders
+    op: filter
+    query: "revenue > 0 and units_sold > 0"
+
+  - name: add margin columns
+    op: derive
+    expressions:
+      margin: "revenue - cost"
+      margin_pct: "(revenue - cost) / revenue * 100"
+
+  # Result columns are always <column>_<function>: revenue_sum, revenue_mean, ...
+  - name: totals per region and category
+    op: group_by
+    by: [region, category]
+    aggregations:
+      revenue: [sum, mean]
+      margin: sum
+      units_sold: sum
+
+  - op: sort
+    by: revenue_sum
+    ascending: false
+
+output:
+  - examples/out/sales_by_region.csv
+  - examples/out/sales_by_region.xlsx
+  - sqlite:///examples/out/warehouse.db#sales_by_region
+
+charts:
+  outdir: examples/out/charts
+  list:
+    - kind: bar
+      x: region
+      y: revenue_sum
+      path: revenue_by_region.png
+      title: Revenue by region
+    - kind: scatter
+      x: units_sold_sum
+      y: margin_sum
+      color_by: category
+      path: margin_vs_units.png
+
+profile: examples/out/profile.json

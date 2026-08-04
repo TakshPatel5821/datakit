@@ -1,0 +1,52 @@
+# Validate the cleaned sales file:
+#   datakit validate examples/out/sales_clean.csv --schema examples/sales_schema.yaml
+
+min_rows: 1
+strict: false            # true -> any unexpected column is an error
+
+columns:
+  order_id:
+    type: str
+    required: true
+    nullable: false
+    regex: '^ORD-\d{6}$'
+
+  order_date:
+    type: datetime
+    required: true
+    nullable: false
+
+  region:
+    type: str
+    allowed: [North, South, East, West, Central]
+
+  category:
+    type: str
+    allowed: [Hardware, Software, Services, Support]
+
+  channel:
+    type: str
+    allowed: [online, retail, partner]
+    max_null_fraction: 0.05
+
+  units_sold:
+    type: int
+    min: 1
+    max: 1000
+
+  unit_price:
+    type: float
+    min: 0
+
+  revenue:
+    type: float
+    min: 0
+    nullable: false
+
+  cost:
+    type: float
+    min: 0
+
+  customer_email:
+    type: str
+    regex: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
